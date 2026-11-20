@@ -73,8 +73,10 @@ enum State {
     Lingering { until: Instant, region: BBox },
     FadingReply { stage: u32, next: Instant, region: BBox },
     /// The guide panel. `panel: None` = dismissed, waiting for pen-up so the
-    /// dismissing touch doesn't leave a mark on the page.
-    Help { panel: Option<help::Help>, until: Instant },
+    /// dismissing touch doesn't leave a mark on the page. `armed` turns true
+    /// once the pen has lifted after the panel opened: the touch that opened
+    /// it (a tap on "guide") must not also close it.
+    Help { panel: Option<help::Help>, until: Instant, armed: bool },
     /// A remembered page rising through the paper: date, the writer's own
     /// past ink, the old reply — all in faded ink. `saved` is today's page.
     Conjuring { plan: ConjurePlan, next: Instant, saved: Vec<u8> },
@@ -339,6 +341,9 @@ fn run() -> std::io::Result<()> {
     surf.fill_rect(0, 0, SCREEN_W, SCREEN_H, WHITE);
     decor.paint(&mut surf);
     hint.show(&mut surf, &font);
+    // The start page: the guide opens over the blank page, and the first
+    // touch of the pen (or time) puts the page with its hint back.
+    let start_guide = help::show(&mut surf, &font, takeover);
     disp.update_all(surf.w, surf.h);
     // A foot control tapped this iteration, acted on after input is drained.
     let mut control: Option<page::Control> = None;
@@ -370,7 +375,11 @@ fn run() -> std::io::Result<()> {
     };
 
     let mut user_ink = ink::Ink::new();
-    let mut state = State::Listening { last_pen: None };
+    let mut state = State::Help {
+        panel: Some(start_guide),
+        until: Instant::now() + Duration::from_secs(45),
+        armed: false,
+    };
     let mut pen_down = false;
     // The turn being remembered: strokes captured at commit, transcript and
     // reply accumulated as they stream, stored when the turn completes.
@@ -623,7 +632,7 @@ fn run() -> std::io::Result<()> {
                         let (px, py, pw, ph) = panel.region.rect();
                         disp.update(px, py, pw, ph, false);
                         eprintln!("sage: guide shown (control)");
-                        state = State::Help { panel: Some(panel), until: Instant::now() + Duration::from_secs(45) };
+                        state = State::Help { panel: Some(panel), until: Instant::now() + Duration::from_secs(45), armed: false };
                     }
                 }
             }
@@ -654,7 +663,7 @@ fn run() -> std::io::Result<()> {
                         let (px, py, pw, ph) = panel.region.rect();
                         disp.update(px, py, pw, ph, false);
                         eprintln!("sage: guide shown");
-                        State::Help { panel: Some(panel), until: Instant::now() + Duration::from_secs(45) }
+                        State::Help { panel: Some(panel), until: Instant::now() + Duration::from_secs(45), armed: false }
                     } else if oracle.is_none() {
                         // No spirit at all: don't eat ink that nothing will
                         // answer — leave the writing and put the reason below.
@@ -894,20 +903,22 @@ fn run() -> std::io::Result<()> {
                 }
             }
 
-            State::Help { panel, until } => match panel {
+            State::Help { panel, until, armed } => match panel {
                 Some(p) => {
-                    if stylus_tapped || Instant::now() >= until {
+                    if (armed && stylus_tapped) || Instant::now() >= until {
                         let region = p.dismiss(&mut surf);
                         let (x, y, w, h) = region.rect();
                         disp.update(x, y, w, h, false);
                         eprintln!("sage: guide dismissed");
-                        State::Help { panel: None, until }
+                        State::Help { panel: None, until, armed }
                     } else {
-                        State::Help { panel: Some(p), until }
+                        // Arm only once the opening touch has lifted; a touch
+                        // already on the glass keeps it disarmed.
+                        State::Help { panel: Some(p), until, armed: armed || !stylus_on }
                     }
                 }
                 // Dismissed: swallow the closing touch, listen again on pen-up.
-                None if stylus_on => State::Help { panel: None, until },
+                None if stylus_on => State::Help { panel: None, until, armed },
                 None => State::Listening { last_pen: None },
             },
 

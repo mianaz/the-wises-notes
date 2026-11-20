@@ -68,14 +68,26 @@ These samples come from the persona's own examples in [app/persona.txt](app/pers
 - **Erased pages.** A harmful request meets a page wiped blank: the notebook's own way of saying no.
 
 ## Quick start
-You need a reMarkable Paper Pro in developer mode with [xovi](https://github.com/asivery/xovi) and [AppLoad](https://github.com/asivery/rm-appload) installed, reachable over SSH as `rm` (or whatever `SAGE_HOST` names). On your computer (Linux, or WSL on Windows) you need `rustup` with the `aarch64-unknown-linux-gnu` target and `zig` (`pip install ziglang`, or zig on your PATH). The tutorial walks through all of this in [Prepare the tablet](docs/TUTORIAL.md#2-prepare-the-tablet) and [Prepare your computer](docs/TUTORIAL.md#3-prepare-your-computer).
+You need a reMarkable Paper Pro in developer mode with [xovi](https://github.com/asivery/xovi) and [AppLoad](https://github.com/asivery/rm-appload) installed, reachable over SSH. The tutorial covers this in [Prepare the tablet](docs/TUTORIAL.md#2-prepare-the-tablet). Nothing else needs to be on the tablet, and no compiler is needed.
+
+1. Download `sage-notes-<version>.zip` from this repository's **Releases** page and unzip it. You get two folders, `sage-notes` and `sage-notes-en`.
+2. Copy both into AppLoad and make the launchers executable (this works from Linux, macOS, or Windows PowerShell):
+   ```sh
+   scp -O -r sage-notes sage-notes-en root@10.11.99.1:/home/root/xovi/exthome/appload/
+   ssh root@10.11.99.1 'chmod +x /home/root/xovi/exthome/appload/sage-notes*/*.sh /home/root/xovi/exthome/appload/sage-notes/sage'
+   ```
+3. Give him a model: open the app's settings in AppLoad and paste a key, or see [Configuration](#configuration).
+4. In AppLoad, tap **Reload**, then **The Wise's Notes**.
+
+The zip contains the binary, [quill](https://github.com/MaximeRivest/quill)'s `libquill.so`, the OS 3.29 compatibility shim, fonts and launchers. It never contains a key or the canon lines, so copying a newer zip over an install keeps your settings and memories.
+
+**Building from source** instead needs Linux or WSL with `rustup` and `zig`. See [Install](docs/TUTORIAL.md#4-install) in the tutorial:
 
 ```sh
-./scripts/build.sh --pull-libs --test   # first time: copy libquill/libqsgepaper from the tablet and run the tests
-./scripts/deploy.sh                     # install both tiles into AppLoad
+./scripts/build.sh --pull-libs --test   # first time: copy libqsgepaper from your tablet, run the tests
+./scripts/deploy.sh                     # install both tiles over ssh
+./scripts/make-bundle.sh                # or: build the release zip in dist/
 ```
-
-Then give him a model (next section) and open **The Wise's Notes** from the AppLoad panel. On OS 3.29 the bundle preloads `libquillcompat.so` automatically.
 
 ## Configuration
 Every setting is a `SAGE_*` line in `oracle.env`, next to the binary on the tablet, or in AppLoad's settings for the app. The minimum is a key:
@@ -130,8 +142,10 @@ The exact lines he can quote are **not part of this project**. They are dialogue
 | [`src/`](src) | The engine: pen input, ink, oracle client, memory, e-ink display (descended from riddle and being reworked) |
 | [`app/`](app) | The AppLoad bundle: manifests, launchers, `sage-cli.sh`, `persona.txt`, `canon.example.txt`, icon, settings schema |
 | [`docs/`](docs) | The full tutorial, in [English](docs/TUTORIAL.md) and [Chinese](docs/TUTORIAL.zh-CN.md) |
+| [`compat/`](compat) | `quillcompat.c`, the shim that lets quill run on OS 3.29 |
 | [`fonts/`](fonts) | Crimson Pro and Dancing Script. LXGW WenKai is fetched by `scripts/fetch-fonts.sh` |
-| [`scripts/`](scripts) | `build.sh` (zig cross-build), `deploy.sh`, `fetch-fonts.sh`, `fetch-canon.py`, `make-icon.py` |
+| [`licenses/`](licenses) | Licenses of bundled third-party code (quill) |
+| [`scripts/`](scripts) | `build.sh` (zig cross-build), `deploy.sh`, `make-bundle.sh` (release zip), `fetch-quill.sh`, `fetch-fonts.sh`, `fetch-canon.py`, `make-icon.py` |
 
 ## License
-The code is under the [MIT License](LICENSE). The bundled fonts are under the SIL Open Font License 1.1. Hroptatyr, Khaenri'ah and every related name are © HoYoverse. Credits are in [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).
+The code is under the [MIT License](LICENSE). The bundled `libquill.so` is quill's, also MIT ([license](licenses/quill-LICENSE.txt)). The bundled fonts are under the SIL Open Font License 1.1. Hroptatyr, Khaenri'ah and every related name are © HoYoverse. Credits are in [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).

@@ -7,7 +7,7 @@ This guide takes you from a stock reMarkable Paper Pro to a notebook in which yo
 - [1. What you need](#1-what-you-need)
 - [2. Prepare the tablet](#2-prepare-the-tablet)
 - [3. Prepare your computer](#3-prepare-your-computer)
-- [4. Build and install](#4-build-and-install)
+- [4. Install](#4-install)
 - [5. Give him a model](#5-give-him-a-model)
 - [6. Choosing a model: recipes](#6-choosing-a-model-recipes)
 - [7. Using the notebook](#7-using-the-notebook)
@@ -27,8 +27,8 @@ This guide takes you from a stock reMarkable Paper Pro to a notebook in which yo
 |---|---|
 | **Tablet** | A reMarkable Paper Pro with developer mode on, reachable over SSH. |
 | **On the tablet** | [xovi](https://github.com/asivery/xovi) and [AppLoad](https://github.com/asivery/rm-appload), which put the notebook in the sidebar. |
-| **Computer** | Linux, or Windows with [WSL](https://learn.microsoft.com/windows/wsl/install) (Ubuntu). macOS works too if you install the same tools. |
-| **Tools** | [`rustup`](https://rustup.rs) with the `aarch64-unknown-linux-gnu` target, [`zig`](https://ziglang.org) (the simplest way is `pip install ziglang`), `python3`, `ssh`/`scp`, `curl`. |
+| **Computer** | Any computer with `ssh` and `scp`: Linux, macOS, or Windows (PowerShell has both built in). |
+| **To build from source** (optional) | Linux, or Windows with [WSL](https://learn.microsoft.com/windows/wsl/install) (Ubuntu), with [`rustup`](https://rustup.rs) and the `aarch64-unknown-linux-gnu` target, [`zig`](https://ziglang.org) (the simplest way is `pip install ziglang`), `python3` and `curl`. |
 | **A model** | Any **vision-capable** model: a cloud API key (OpenAI, Gemini, Claude, OpenRouter…) or a local server on your network (Ollama, LM Studio…). It reads your handwriting as an image, so text-only models will not do. |
 
 > Developer mode and these tools change how your tablet runs. Read reMarkable's own notes on developer mode first, keep your SSH password somewhere safe, and learn the escape hatch in [section 13](#13-troubleshooting) before you start.
@@ -51,7 +51,9 @@ This guide takes you from a stock reMarkable Paper Pro to a notebook in which yo
 
 ## 3. Prepare your computer
 
-In Linux or WSL:
+**Installing from the release zip?** You only need `ssh` and `scp`, which you have already used above. Skip to [section 4](#4-install).
+
+**Building from source?** In Linux or WSL:
 
 ```sh
 # Rust and the tablet's target
@@ -70,27 +72,58 @@ git clone <this repository> sage-notes
 cd sage-notes
 ```
 
-## 4. Build and install
+## 4. Install
 
-The first build copies two libraries from your own tablet (they are not redistributed), runs the tests, and builds the binary:
+There are two ways in. Both end with the same two tiles:
+- `sage-notes`, with the Chinese guide.
+- `sage-notes-en` (**The Wise's Notes**), with the English guide.
+
+Both tiles share one binary, one persona, one key and one memory. Nothing else needs to be on the tablet.
+
+### A. From the release zip (recommended)
+
+1. Download `sage-notes-<version>.zip` from this repository's **Releases** page. A matching `.sha256` file lets you check the download:
+   ```sh
+   sha256sum -c sage-notes-<version>.zip.sha256
+   ```
+2. Unzip it. You get two folders, `sage-notes` and `sage-notes-en`.
+3. Copy both into AppLoad. The tablet is at `10.11.99.1` over USB; use `rm` if you set up the short name in [section 2](#2-prepare-the-tablet):
+   ```sh
+   scp -O -r sage-notes sage-notes-en root@10.11.99.1:/home/root/xovi/exthome/appload/
+   ```
+4. Make the launchers executable. Unzipping on Windows drops this flag, so always run this once:
+   ```sh
+   ssh root@10.11.99.1 'chmod +x /home/root/xovi/exthome/appload/sage-notes*/*.sh /home/root/xovi/exthome/appload/sage-notes/sage'
+   ```
+5. Open the AppLoad panel and tap **Reload**. Both tiles should be there.
+
+The zip holds the `sage` binary, `libquill.so` from [quill](https://github.com/MaximeRivest/quill) (MIT), `libquillcompat.so` (the shim that lets quill run on OS 3.29), the fonts, the persona and the launchers. It never contains `oracle.env` or `canon.txt`, so your key and canon are never overwritten.
+
+### B. From source
+
+The first build copies reMarkable's own `libqsgepaper.so` from your tablet to link against (it is never redistributed), downloads `libquill.so` from riddle's public release (checked against a pinned SHA-256), runs the tests, and builds everything:
 
 ```sh
 ./scripts/build.sh --pull-libs --test
 ```
 
-Later builds only need `./scripts/build.sh`. The result is `dist/sage`.
+Later builds only need `./scripts/build.sh`. The results are in `dist/`: `sage`, `libquill.so` and `libquillcompat.so`, the last built from [`compat/quillcompat.c`](../compat/quillcompat.c).
 
-Install it into AppLoad:
+Then either install over SSH:
 
 ```sh
 ./scripts/deploy.sh
 ```
 
-This copies the app to `/home/root/xovi/exthome/appload/sage-notes` (the tile with the Chinese guide) and adds a second tile, `sage-notes-en` (**The Wise's Notes**, with the English guide). Both tiles share one binary, one persona, one key and one memory. The first time, it also fetches the Chinese font with [`scripts/fetch-fonts.sh`](../scripts/fetch-fonts.sh) (about 25 MB).
+or build the same zip that releases ship:
 
-On first install, `deploy.sh` creates `oracle.env` on the tablet. It never overwrites it again, so your key survives updates.
+```sh
+./scripts/make-bundle.sh        # writes dist/sage-notes-<version>.zip and its .sha256
+```
 
-Open the AppLoad panel and refresh it. Both tiles should be there.
+`deploy.sh` copies exactly what the zip contains. The first time, it also fetches the Chinese font with [`scripts/fetch-fonts.sh`](../scripts/fetch-fonts.sh) (about 25 MB). On first install it creates `oracle.env` on the tablet (from riddle's, if you had riddle installed), and it never overwrites it again.
+
+Open the AppLoad panel and tap **Reload**. Both tiles should be there.
 
 ## 5. Give him a model
 
@@ -98,11 +131,14 @@ Without a model the notebook still opens, but the first page tells you it "lies 
 
 **A. On the tablet, in AppLoad's settings for the app.** Pick a preset (OpenAI, Gemini, Claude, OpenRouter, Ollama), paste your key, and check the model name.
 
-**B. By editing `oracle.env` over SSH:**
+**B. By editing `oracle.env` over SSH.** After a zip install the file does not exist yet, so the `cp` below creates it from the example. It never overwrites an existing file.
 
 ```sh
 ssh rm
-vi /home/root/xovi/exthome/appload/sage-notes/oracle.env
+cd /home/root/xovi/exthome/appload/sage-notes
+[ -f oracle.env ] || cp oracle.env.example oracle.env
+chmod 600 oracle.env
+vi oracle.env
 ```
 
 The minimum is a key:
@@ -195,7 +231,7 @@ A key is required for any cloud address. It may be left out for addresses on you
 
 ## 7. Using the notebook
 
-**Opening.** Tap **The Wise's Notes** (English guide and messages) or the Chinese tile in AppLoad. The tablet's own screens step aside while the notebook is open.
+**Opening.** Tap **The Wise's Notes** (English guide and messages) or the Chinese tile in AppLoad. The tablet's own screens step aside while the notebook is open. The guide opens first; touch the page with the pen to put it away and begin.
 
 **Writing.** Write anywhere on the page, in English or Chinese, then lift your pen. After a short pause your ink sinks into the paper, a few thinking marks appear, and his answer writes itself in ink. Then it fades and the page is yours again. He answers in the language you wrote in.
 
@@ -315,8 +351,7 @@ This writes `sage-preview-blank.png`, `sage-preview-guide.png` and `sage-preview
 
 **Other ways to change the look**
 
-- **The title** in the guide: `SAGE_TITLE=…`
-- **The language** of the guide, sleep card and messages: `SAGE_UI_LANG=en` or `zh`. Each tile sets its own, and he always answers in the language you write in.
+- **The title and language** of the guide, sleep card and messages come from the tile you tap, so one shared `oracle.env` never turns the Chinese tile English or the other way round. He always answers in the language you write in. To change them, edit the tile's launcher on the tablet: the `--setenv=SAGE_UI_LANG=…` and `--setenv=SAGE_TITLE=…` lines in `sage-notes-en/appload-launch.sh`, or the defaults near the top of `sage-notes/sage-takeover.sh`. An update puts the originals back.
 - **The persona** (his voice, the length of his replies, what he knows): edit `persona.txt` on the tablet. It takes effect on the next page, with no rebuild.
 
 ## 11. Every setting
@@ -345,8 +380,8 @@ The names from earlier versions (`SAGE_OPENAI_KEY`, `SAGE_OPENAI_BASE`, `SAGE_OP
 | `SAGE_PERSONA_FILE` | `persona.txt` in the app folder | Who he is. Plain text you can edit on the tablet; no rebuild needed. |
 | `SAGE_CANON_FILE` | `canon.txt` in the app folder | Your exact lines. |
 | `SAGE_CANON_MODE` | `lookup` | `inline` sends the whole canon with every page instead (slower and dearer). |
-| `SAGE_UI_LANG` | `zh` for the Chinese tile, `en` for The Wise's Notes | Language of the guide, sleep card and messages. |
-| `SAGE_TITLE` | tile name | Title in the guide. |
+| `SAGE_UI_LANG` | `zh` for the Chinese tile, `en` for The Wise's Notes | Language of the guide, sleep card and messages. Set by the tile, not read from `oracle.env` ([section 10](#10-fonts-changing-his-handwriting)). |
+| `SAGE_TITLE` | tile name | Title in the guide. Set by the tile, like `SAGE_UI_LANG`. |
 | `SAGE_FONT`, `SAGE_FONT_CJK`, `SAGE_FONT_FALLBACK` | bundled fonts | His Latin and Chinese hands, and extra fallbacks. |
 
 **Memory**
@@ -367,7 +402,8 @@ The names from earlier versions (`SAGE_OPENAI_KEY`, `SAGE_OPENAI_BASE`, `SAGE_OP
 
 ## 12. Updating, backing up, uninstalling
 
-- **Update:** `git pull`, then `./scripts/build.sh` and `./scripts/deploy.sh`. Your `oracle.env`, `canon.txt` and memories are kept.
+- **Update from a release:** download the new zip and repeat steps 2–5 of [section 4A](#a-from-the-release-zip-recommended). Your `oracle.env`, `canon.txt` and memories are kept, because the zip never contains them.
+- **Update from source:** `git pull`, then `./scripts/build.sh` and `./scripts/deploy.sh`. Your `oracle.env`, `canon.txt` and memories are kept.
 - **Back up your memories:**
   ```sh
   scp -r rm:/home/root/sage-data/memories ./memories-backup

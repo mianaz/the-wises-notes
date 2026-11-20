@@ -7,7 +7,7 @@
 - [1. 准备工作](#1-准备工作)
 - [2. 准备平板](#2-准备平板)
 - [3. 准备电脑](#3-准备电脑)
-- [4. 编译与安装](#4-编译与安装)
+- [4. 安装](#4-安装)
 - [5. 给他配置模型](#5-给他配置模型)
 - [6. 选择模型与配置示例](#6-选择模型与配置示例)
 - [7. 使用笔记](#7-使用笔记)
@@ -27,8 +27,8 @@
 |---|---|
 | **平板** | 一台开启了开发者模式、能通过 SSH 连接的 reMarkable Paper Pro。 |
 | **平板上的软件** | [xovi](https://github.com/asivery/xovi) 和 [AppLoad](https://github.com/asivery/rm-appload)，它们让贤者笔记出现在侧边栏里。 |
-| **电脑** | Linux，或装有 [WSL](https://learn.microsoft.com/zh-cn/windows/wsl/install)（Ubuntu）的 Windows。macOS 装好同样的工具也可以。 |
-| **工具** | 带 `aarch64-unknown-linux-gnu` 目标的 [`rustup`](https://rustup.rs)、[`zig`](https://ziglang.org)（最简单的方式是 `pip install ziglang`）、`python3`、`ssh`/`scp`、`curl`。 |
+| **电脑** | 任何装有 `ssh` 和 `scp` 的电脑：Linux、macOS 或 Windows（PowerShell 已自带这两个命令）。 |
+| **从源码编译**（可选） | Linux，或装有 [WSL](https://learn.microsoft.com/zh-cn/windows/wsl/install)（Ubuntu）的 Windows，并装好带 `aarch64-unknown-linux-gnu` 目标的 [`rustup`](https://rustup.rs)、[`zig`](https://ziglang.org)（最简单的方式是 `pip install ziglang`）、`python3` 和 `curl`。 |
 | **一个模型** | 任何**支持图像输入**的模型：云端 API 密钥（OpenAI、Gemini、Claude、OpenRouter……），或你局域网内的本地服务器（Ollama、LM Studio……）。它需要把你的手写当作图片来读，所以纯文本模型不行。 |
 
 > 开发者模式和这些工具会改变平板的运行方式。开始之前，请先阅读 reMarkable 官方关于开发者模式的说明，妥善保存 SSH 密码，并了解[第 13 节](#13-故障排查)中的应急办法。
@@ -51,7 +51,9 @@
 
 ## 3. 准备电脑
 
-在 Linux 或 WSL 中：
+**用发布压缩包安装？** 你只需要上面已经用过的 `ssh` 和 `scp`，直接跳到[第 4 节](#4-安装)。
+
+**从源码编译？** 在 Linux 或 WSL 中：
 
 ```sh
 # Rust 及平板的编译目标
@@ -70,27 +72,58 @@ git clone <本仓库地址> sage-notes
 cd sage-notes
 ```
 
-## 4. 编译与安装
+## 4. 安装
 
-第一次编译会从你自己的平板复制两个库（它们不会被再分发），运行测试，然后编译程序：
+有两种安装方式，最后得到的都是同样的两块磁贴：
+- `sage-notes`（**贤者笔记**），中文指引。
+- `sage-notes-en`（`The Wise's Notes`），英文指引。
+
+两块磁贴共用同一个程序、同一份人设、同一个密钥和同一份记忆。平板上不需要再装别的东西。
+
+### 方式 A 使用发布压缩包（推荐）
+
+1. 从本仓库的 **Releases** 页面下载 `sage-notes-<版本号>.zip`。附带的 `.sha256` 文件可以用来校验下载是否完整：
+   ```sh
+   sha256sum -c sage-notes-<版本号>.zip.sha256
+   ```
+2. 解压，会得到 `sage-notes` 和 `sage-notes-en` 两个文件夹。
+3. 把两个文件夹都复制进 AppLoad。用 USB 连接时平板的地址是 `10.11.99.1`；如果你在[第 2 节](#2-准备平板)设置了短名字，也可以用 `rm`：
+   ```sh
+   scp -O -r sage-notes sage-notes-en root@10.11.99.1:/home/root/xovi/exthome/appload/
+   ```
+4. 让启动脚本可执行。在 Windows 上解压会丢掉这个标记，所以请务必运行一次：
+   ```sh
+   ssh root@10.11.99.1 'chmod +x /home/root/xovi/exthome/appload/sage-notes*/*.sh /home/root/xovi/exthome/appload/sage-notes/sage'
+   ```
+5. 打开 AppLoad 面板并点 **Reload**，两块磁贴就会出现。
+
+压缩包里有 `sage` 程序、来自 [quill](https://github.com/MaximeRivest/quill)（MIT）的 `libquill.so`、`libquillcompat.so`（让 quill 能在 OS 3.29 上运行的垫片）、字体、人设和启动脚本。它永远不包含 `oracle.env` 或 `canon.txt`，所以你的密钥和原话文件永远不会被覆盖。
+
+### 方式 B 从源码编译
+
+第一次编译会从你的平板复制 reMarkable 自带的 `libqsgepaper.so` 用于链接（它永远不会被再分发），从 riddle 的公开发布版下载 `libquill.so`（会用固定的 SHA-256 校验），运行测试，然后编译全部内容：
 
 ```sh
 ./scripts/build.sh --pull-libs --test
 ```
 
-之后再编译只需要 `./scripts/build.sh`。生成的程序是 `dist/sage`。
+之后再编译只需要 `./scripts/build.sh`。生成的文件都在 `dist/` 中：`sage`、`libquill.so` 和 `libquillcompat.so`，最后一个由 [`compat/quillcompat.c`](../compat/quillcompat.c) 编译而来。
 
-安装到 AppLoad：
+然后可以通过 SSH 直接安装：
 
 ```sh
 ./scripts/deploy.sh
 ```
 
-这会把应用复制到 `/home/root/xovi/exthome/appload/sage-notes`（**贤者笔记**，中文指引），并添加第二块磁贴 `sage-notes-en`（`The Wise's Notes`，英文指引）。两块磁贴共用同一个程序、同一份人设、同一个密钥和同一份记忆。第一次安装时，它还会通过 [`scripts/fetch-fonts.sh`](../scripts/fetch-fonts.sh) 下载中文字体（约 25 MB）。
+或者生成和发布版一样的压缩包：
 
-首次安装时，`deploy.sh` 会在平板上创建 `oracle.env`。之后它永远不会覆盖这个文件，所以更新时你的密钥会保留下来。
+```sh
+./scripts/make-bundle.sh        # 生成 dist/sage-notes-<版本号>.zip 及其 .sha256
+```
 
-打开 AppLoad 面板并刷新，两块磁贴就会出现。
+`deploy.sh` 复制的内容和压缩包完全相同。第一次运行时，它还会通过 [`scripts/fetch-fonts.sh`](../scripts/fetch-fonts.sh) 下载中文字体（约 25 MB）。首次安装时它会在平板上创建 `oracle.env`（如果你装过 riddle，会沿用 riddle 的设置），之后永远不会覆盖这个文件。
+
+打开 AppLoad 面板并点 **Reload**，两块磁贴就会出现。
 
 ## 5. 给他配置模型
 
@@ -98,11 +131,14 @@ cd sage-notes
 
 **方式 A：在平板上，进入 AppLoad 中贤者笔记的设置。** 选择一个预设（OpenAI、Gemini、Claude、OpenRouter、Ollama），粘贴密钥，再确认模型名称。
 
-**方式 B：通过 SSH 编辑 `oracle.env`：**
+**方式 B：通过 SSH 编辑 `oracle.env`。** 用压缩包安装后这个文件还不存在，下面的 `cp` 会从示例文件创建它；已有的文件不会被覆盖。
 
 ```sh
 ssh rm
-vi /home/root/xovi/exthome/appload/sage-notes/oracle.env
+cd /home/root/xovi/exthome/appload/sage-notes
+[ -f oracle.env ] || cp oracle.env.example oracle.env
+chmod 600 oracle.env
+vi oracle.env
 ```
 
 最少只需要一个密钥：
@@ -195,7 +231,7 @@ SAGE_API_HEADERS=api-key: 你的-azure-密钥
 
 ## 7. 使用笔记
 
-**打开。** 在 AppLoad 中轻点**贤者笔记**（中文指引和提示）或 `The Wise's Notes`（英文）。笔记打开期间，平板原本的界面会暂时让开。
+**打开。** 在 AppLoad 中轻点**贤者笔记**（中文指引和提示）或 `The Wise's Notes`（英文）。笔记打开期间，平板原本的界面会暂时让开。首先出现的是指引页，用笔轻触页面即可收起，开始书写。
 
 **书写。** 在页面任意位置用中文或英文书写，然后抬笔。稍等片刻，你的墨迹会沉入纸中，出现几笔思考的痕迹，接着他的回答会以墨迹自行写出。随后字迹淡去，页面又归你了。他用你书写的语言回答。
 
@@ -307,8 +343,7 @@ SAGE_FONT=fonts/MyHand.ttf SAGE_FONT_CJK=fonts/LXGWWenKai-Regular.ttf SAGE_UI_LA
 
 **其他改变外观的方式**
 
-- **指引中的标题：** `SAGE_TITLE=…`
-- **指引、休眠卡片和提示的语言：** `SAGE_UI_LANG=zh` 或 `en`。每块磁贴各自设置，而他总是用你书写的语言回答。
+- **指引、休眠卡片和提示的标题与语言**由你点开的磁贴决定，所以两块磁贴共用的 `oracle.env` 永远不会把中文磁贴变成英文，反之亦然。他总是用你书写的语言回答。想修改的话，编辑平板上该磁贴的启动脚本：`sage-notes-en/appload-launch.sh` 中的 `--setenv=SAGE_UI_LANG=…` 和 `--setenv=SAGE_TITLE=…` 两行，或 `sage-notes/sage-takeover.sh` 开头的默认值。更新时这些文件会恢复原样。
 - **人设**（他的语气、回答的长度、他知道什么）：编辑平板上的 `persona.txt`。下一页就会生效，无需重新编译。
 
 ## 11. 全部设置
@@ -337,8 +372,8 @@ SAGE_FONT=fonts/MyHand.ttf SAGE_FONT_CJK=fonts/LXGWWenKai-Regular.ttf SAGE_UI_LA
 | `SAGE_PERSONA_FILE` | 应用目录中的 `persona.txt` | 他是谁。可在平板上直接编辑的纯文本，无需重新编译。 |
 | `SAGE_CANON_FILE` | 应用目录中的 `canon.txt` | 你的原话文件。 |
 | `SAGE_CANON_MODE` | `lookup` | 设为 `inline` 时，每一页都会附上整份原话（更慢，也更贵）。 |
-| `SAGE_UI_LANG` | 贤者笔记为 `zh`，The Wise's Notes 为 `en` | 指引、休眠卡片和提示的语言。 |
-| `SAGE_TITLE` | 磁贴名称 | 指引中的标题。 |
+| `SAGE_UI_LANG` | 贤者笔记为 `zh`，The Wise's Notes 为 `en` | 指引、休眠卡片和提示的语言。由磁贴设置，不从 `oracle.env` 读取（见[第 10 节](#10-字体与他的笔迹)）。 |
+| `SAGE_TITLE` | 磁贴名称 | 指引中的标题。和 `SAGE_UI_LANG` 一样由磁贴设置。 |
 | `SAGE_FONT`、`SAGE_FONT_CJK`、`SAGE_FONT_FALLBACK` | 附带的字体 | 他的西文与中文笔迹，以及额外的后备字体。 |
 
 **记忆**
@@ -359,7 +394,8 @@ SAGE_FONT=fonts/MyHand.ttf SAGE_FONT_CJK=fonts/LXGWWenKai-Regular.ttf SAGE_UI_LA
 
 ## 12. 更新、备份与卸载
 
-- **更新：** 先 `git pull`，再运行 `./scripts/build.sh` 和 `./scripts/deploy.sh`。你的 `oracle.env`、`canon.txt` 和记忆都会保留。
+- **用发布版更新：** 下载新的压缩包，重复[第 4 节方式 A](#方式-a-使用发布压缩包推荐) 的第 2–5 步。压缩包里从不包含 `oracle.env`、`canon.txt` 和记忆，所以它们都会保留。
+- **从源码更新：** 先 `git pull`，再运行 `./scripts/build.sh` 和 `./scripts/deploy.sh`。你的 `oracle.env`、`canon.txt` 和记忆都会保留。
 - **备份记忆：**
   ```sh
   scp -r rm:/home/root/sage-data/memories ./memories-backup

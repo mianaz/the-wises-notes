@@ -20,15 +20,19 @@ export SAGE_PERSONA_FILE="$HERE/persona.txt"
 export SAGE_CANON_FILE="$HERE/canon.txt"          # optional: your exact lines
 export SAGE_FONT="$HERE/fonts/CrimsonPro-Italic.ttf"
 export SAGE_FONT_CJK="$HERE/fonts/LXGWWenKai-Regular.ttf"
-export SAGE_UI_LANG="${SAGE_UI_LANG:-zh}"       # the English tile passes en
-export SAGE_TITLE="${SAGE_TITLE:-贤者笔记}"
+TILE_LANG="${SAGE_UI_LANG:-zh}"                 # the English tile passes en
+TILE_TITLE="${SAGE_TITLE:-贤者笔记}"
 export SAGE_MEMORY_DIR=/home/root/sage-data/memories
 mkdir -p "$SAGE_MEMORY_DIR"
 
 if [ -f "$HERE/oracle.env" ]; then
     set -a; . "$HERE/oracle.env"; set +a
 fi
-echo "sage-takeover: api=${SAGE_API:-auto} model=${SAGE_MODEL:-${SAGE_OPENAI_MODEL:-default}}"
+# The tile picks the language and title: oracle.env is shared by both tiles
+# (and may carry an old RIDDLE_UI_LANG renamed to SAGE_UI_LANG), so it must
+# not turn the Chinese tile English or the other way round.
+export SAGE_UI_LANG="$TILE_LANG" SAGE_TITLE="$TILE_TITLE"
+echo "sage-takeover: lang=$SAGE_UI_LANG api=${SAGE_API:-auto} model=${SAGE_MODEL:-${SAGE_OPENAI_MODEL:-default}}"
 
 systemctl stop xochitl
 rm -f /tmp/epframebuffer.lock      # stale EPD lock blocks the engine

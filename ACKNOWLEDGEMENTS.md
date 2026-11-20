@@ -10,9 +10,10 @@ Changed or added so far:
 - Memory in sittings, with a one-line recap of the last sitting and a small set of notes about the writer.
 - Chinese UI strings and Chinese dates on conjured pages.
 - `SAGE_*` configuration, its own AppLoad bundle, icon and build scripts.
+- A self-contained release zip (`scripts/make-bundle.sh`) that needs nothing else on the tablet.
 
 ## quill
-On-device takeover rendering goes through **quill** (MIT), the clean-room C ABI to the reMarkable e-ink engine, through `libquill.so`. On OS 3.29 it runs with the `libquillcompat.so` swapBuffers shim.
+On-device takeover rendering goes through **[quill](https://github.com/MaximeRivest/quill)** (MIT), the clean-room C ABI to the reMarkable e-ink engine, through `libquill.so`. The release zip ships the prebuilt `libquill.so` from riddle's v0.3.0 release, unmodified, with quill's license in [licenses/quill-LICENSE.txt](licenses/quill-LICENSE.txt). On OS 3.29 it runs with `libquillcompat.so`, a swapBuffers shim written for this project ([compat/quillcompat.c](compat/quillcompat.c), MIT). reMarkable's own `libqsgepaper.so` is never redistributed; builds link against the copy on your own tablet.
 
 ## Fonts (SIL Open Font License 1.1)
 - **LXGW WenKai 霞鹜文楷** by LXGW: the Chinese hand.

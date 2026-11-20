@@ -5,8 +5,12 @@
 # Prereqs (one time):
 #   - rustup with the aarch64-unknown-linux-gnu target
 #   - zig, reachable as `python -m ziglang` (pip install ziglang) or on PATH
-#   - libquill.so + libqsgepaper.so in $SAGE_LINK_DIR (default ~/sage-link),
-#     copied from your own tablet:  ./scripts/build.sh --pull-libs
+#   - libqsgepaper.so (reMarkable's engine) in $SAGE_LINK_DIR (default
+#     ~/sage-link), copied from your own tablet:  ./scripts/build.sh --pull-libs
+#   - libquill.so is fetched on demand by scripts/fetch-quill.sh
+#
+# Output in dist/: sage, libquill.so, libquillcompat.so. Then
+# ./scripts/deploy.sh installs them, or ./scripts/make-bundle.sh zips a release.
 #
 # Usage: ./scripts/build.sh [--pull-libs] [--test]
 set -euo pipefail
@@ -44,9 +48,8 @@ CARGO=${CARGO:-$HOME/.cargo/bin/cargo}
 for arg in "$@"; do
     case "$arg" in
         --pull-libs)
+            # reMarkable's own engine: link against your tablet's copy.
             mkdir -p "$LINK_DIR"
-            scp -O "$HOST:/home/root/xovi/exthome/appload/sage-notes/libquill.so" "$LINK_DIR/" 2>/dev/null \
-              || scp -O "$HOST:/home/root/xovi/exthome/appload/riddle/libquill.so" "$LINK_DIR/"
             scp -O "$HOST:/usr/lib/plugins/scenegraph/libqsgepaper.so" "$LINK_DIR/"
             ;;
         --test)
@@ -55,7 +58,15 @@ for arg in "$@"; do
     esac
 done
 
+[ -f "$LINK_DIR/libqsgepaper.so" ] \
+    || { echo "no $LINK_DIR/libqsgepaper.so: run ./scripts/build.sh --pull-libs once (tablet on ssh as $HOST)" >&2; exit 1; }
+./scripts/fetch-quill.sh            # libquill.so, quill's MIT adapter (no-op once fetched)
+
 "$CARGO" build --release --target aarch64-unknown-linux-gnu --features takeover
 BIN="$CARGO_TARGET_DIR/aarch64-unknown-linux-gnu/release/sage"
 mkdir -p dist && cp "$BIN" dist/sage
-echo "built: dist/sage ($(du -h dist/sage | cut -f1))"
+cp "$LINK_DIR/libquill.so" dist/libquill.so
+
+# OS 3.29 swapBuffers shim (compat/quillcompat.c), preloaded by sage-takeover.sh.
+"$TOOLS/cc-arm" -shared -fPIC -O2 -o dist/libquillcompat.so compat/quillcompat.c -ldl
+echo "built: dist/sage ($(du -h dist/sage | cut -f1)), dist/libquill.so, dist/libquillcompat.so"

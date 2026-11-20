@@ -68,14 +68,26 @@
 - **被擦去的一页。** 遇到有害的请求，页面会被擦成一片空白——这是笔记自己说「不」的方式。
 
 ## 快速开始
-你需要一台开启了开发者模式、装好 [xovi](https://github.com/asivery/xovi) 和 [AppLoad](https://github.com/asivery/rm-appload) 的 reMarkable Paper Pro，并能通过 SSH 以 `rm` 这个名字（或 `SAGE_HOST` 指定的名字）连上它。电脑端（Linux，或 Windows 上的 WSL）需要装好带 `aarch64-unknown-linux-gnu` 目标的 `rustup`，以及 `zig`（`pip install ziglang`，或 PATH 中已有 zig）。教程的[准备平板](docs/TUTORIAL.zh-CN.md#2-准备平板)和[准备电脑](docs/TUTORIAL.zh-CN.md#3-准备电脑)两节有详细步骤。
+你需要一台开启了开发者模式、装好 [xovi](https://github.com/asivery/xovi) 和 [AppLoad](https://github.com/asivery/rm-appload) 的 reMarkable Paper Pro，并能通过 SSH 连上它。教程的[准备平板](docs/TUTORIAL.zh-CN.md#2-准备平板)一节有详细步骤。平板上不需要再装别的东西，也不需要编译器。
+
+1. 从本仓库的 **Releases** 页面下载 `sage-notes-<版本号>.zip` 并解压，会得到 `sage-notes` 和 `sage-notes-en` 两个文件夹。
+2. 把两个文件夹都复制进 AppLoad，并让启动脚本可执行（Linux、macOS 或 Windows PowerShell 中都可以运行）：
+   ```sh
+   scp -O -r sage-notes sage-notes-en root@10.11.99.1:/home/root/xovi/exthome/appload/
+   ssh root@10.11.99.1 'chmod +x /home/root/xovi/exthome/appload/sage-notes*/*.sh /home/root/xovi/exthome/appload/sage-notes/sage'
+   ```
+3. 给他配置一个模型：在 AppLoad 中打开应用设置并粘贴密钥，或参见[配置](#配置)。
+4. 在 AppLoad 中点 **Reload**，再点**贤者笔记**。
+
+压缩包里有程序本体、[quill](https://github.com/MaximeRivest/quill) 的 `libquill.so`、OS 3.29 兼容垫片、字体和启动脚本。它永远不包含密钥或原话台词，所以用新版压缩包覆盖安装时，你的设置和记忆都会保留。
+
+**从源码编译**需要 Linux 或 WSL，并装好 `rustup` 和 `zig`，详见教程的[安装](docs/TUTORIAL.zh-CN.md#4-安装)一节：
 
 ```sh
-./scripts/build.sh --pull-libs --test   # 首次：从平板复制 libquill/libqsgepaper，并运行测试
-./scripts/deploy.sh                     # 把两块磁贴安装进 AppLoad
+./scripts/build.sh --pull-libs --test   # 首次：从你的平板复制 libqsgepaper，并运行测试
+./scripts/deploy.sh                     # 通过 ssh 安装两块磁贴
+./scripts/make-bundle.sh                # 或者：在 dist/ 中生成发布用压缩包
 ```
-
-然后给他配置一个模型（见下一节），再从 AppLoad 面板打开**贤者笔记**。在 OS 3.29 上，安装包会自动预加载 `libquillcompat.so`。
 
 ## 配置
 所有设置都是 `oracle.env` 里的 `SAGE_*` 行。这个文件在平板上，与程序放在同一目录；也可以在 AppLoad 的应用设置里修改。最少只需要一个密钥：
@@ -130,8 +142,10 @@ SAGE_API_KEY=sk-...                 # 使用 OpenAI 的 gpt-4o-mini
 | [`src/`](src) | 引擎：笔迹输入、墨迹、模型客户端、记忆、墨水屏显示（源自 riddle，正在重写） |
 | [`app/`](app) | AppLoad 安装包：清单、启动脚本、`sage-cli.sh`、`persona.txt`、`canon.example.txt`、图标、设置定义 |
 | [`docs/`](docs) | 完整教程，有[中文版](docs/TUTORIAL.zh-CN.md)和[英文版](docs/TUTORIAL.md) |
+| [`compat/`](compat) | `quillcompat.c`，让 quill 能在 OS 3.29 上运行的垫片 |
 | [`fonts/`](fonts) | Crimson Pro 和 Dancing Script。霞鹜文楷由 `scripts/fetch-fonts.sh` 下载 |
-| [`scripts/`](scripts) | `build.sh`（zig 交叉编译）、`deploy.sh`、`fetch-fonts.sh`、`fetch-canon.py`、`make-icon.py` |
+| [`licenses/`](licenses) | 随附第三方代码（quill）的许可证 |
+| [`scripts/`](scripts) | `build.sh`（zig 交叉编译）、`deploy.sh`、`make-bundle.sh`（发布用压缩包）、`fetch-quill.sh`、`fetch-fonts.sh`、`fetch-canon.py`、`make-icon.py` |
 
 ## 许可
-代码采用 [MIT 许可证](LICENSE)。附带的字体采用 SIL 开放字体许可证 1.1。海洛塔帝、坎瑞亚及所有相关名称的版权归 HoYoverse 所有。致谢见 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md)（英文）。
+代码采用 [MIT 许可证](LICENSE)。随附的 `libquill.so` 来自 quill，同样采用 MIT 许可证（[许可证全文](licenses/quill-LICENSE.txt)）。附带的字体采用 SIL 开放字体许可证 1.1。海洛塔帝、坎瑞亚及所有相关名称的版权归 HoYoverse 所有。致谢见 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md)（英文）。
