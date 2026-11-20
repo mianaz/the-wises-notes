@@ -1,0 +1,6 @@
+/target/
+/dist/
+# Large or device-local files: fetched or copied by scripts, never committed.
+/fonts/LXGWWenKai-*.ttf
+/app/oracle.env
+/app/canon.txt

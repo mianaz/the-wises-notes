@@ -1,0 +1,51 @@
+贤者笔记 canon file: template
+================================
+The easy way: run ./scripts/fetch-canon.py, which builds app/canon.txt
+for you, then ./scripts/deploy.sh --canon to copy it to the tablet.
+
+By hand: copy this file to canon.txt in the app folder on the tablet
+(/home/root/xovi/exthome/appload/sage-notes/canon.txt), then delete
+this header and fill it with the exact lines you want Hroptatyr to be
+able to quote word for word. When you ask for exact words
+(「原话是什么」, "what were your exact words"), the notebook quotes from
+here verbatim. Anything not in this file, he paraphrases and never invents.
+
+PERSONAL USE ONLY. These lines are HoYoverse's copyrighted script text.
+Keep canon.txt for your own notebook; never share, commit or redistribute it.
+
+Where the lines come from:
+  中文: https://wiki.biligame.com/ys/被镌刻的时光   (section 任务剧情)
+  EN:   https://genshin-impact.fandom.com/wiki/Etched_in_Time  (Dialogue)
+
+Tips
+- Keep only the lines you care about: his own dialogue, the lines said to
+  him, and the notebook entries.
+- By default (SAGE_CANON_MODE=lookup) the file never goes to the model:
+  only the scene headings do, and the notebook finds the line itself. With
+  SAGE_CANON_MODE=inline the whole file rides along with every page, which
+  is slower and dearer (the full quest is roughly 10k tokens).
+- Label each scene so he knows when and to whom a line was said.
+- Keep both languages if you like; he picks the one you wrote in.
+
+Suggested layout
+----------------
+[场景：往日 · 树下研讨会，与艾弗提尔维特、密麦梅斯老师]
+海洛塔帝：……（paste the line here）
+
+[场景：老师的病房]
+海洛塔帝：……
+
+[笔记原文：「不死祝福」→「不死诅咒」]
+「……」
+
+[笔记原文：离开提瓦特前的最后一页]
+「……」
+
+[场景：「被镌刻的记忆」，与艾弗提尔维特]
+海洛塔帝：……
+
+[场景：「被镌刻的记忆」，与旅行者]
+海洛塔帝：……
+
+[Scene: Bygone Days, the seminar under the tree (EN)]
+Hroptatyr: ...

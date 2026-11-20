@@ -1,0 +1,135 @@
+{
+  "title": "贤者笔记 — oracle settings",
+  "env": "oracle.env",
+  "fields": [
+    {
+      "key": "SAGE_API",
+      "label": "API style",
+      "kind": "select",
+      "options": [
+        "",
+        "openai",
+        "anthropic"
+      ],
+      "help": "Leave empty to guess from the base URL. openai = chat/completions (OpenAI, Gemini, OpenRouter, Ollama, LM Studio…); anthropic = Claude's messages API."
+    },
+    {
+      "key": "SAGE_API_KEY",
+      "label": "API key",
+      "kind": "secret",
+      "placeholder": "sk-… / AIza… / sk-ant-…",
+      "help": "Stored only on the tablet. Not needed for a local server (Ollama, LM Studio)."
+    },
+    {
+      "key": "SAGE_API_BASE",
+      "label": "API base URL",
+      "kind": "text",
+      "placeholder": "https://api.openai.com/v1",
+      "help": "Everything before /chat/completions or /messages."
+    },
+    {
+      "key": "SAGE_MODEL",
+      "label": "Model",
+      "kind": "text",
+      "placeholder": "gpt-4o-mini",
+      "help": "Must be vision-capable: it reads your handwriting as an image."
+    },
+    {
+      "key": "SAGE_REASONING",
+      "label": "Reasoning effort",
+      "kind": "select",
+      "options": [
+        "",
+        "low",
+        "medium",
+        "high"
+      ],
+      "help": "openai api, thinking models only (o-series, Gemini 3.x). Leave empty otherwise."
+    },
+    {
+      "key": "SAGE_MAX_TOKENS",
+      "label": "Max tokens",
+      "kind": "text",
+      "placeholder": "2000",
+      "help": "Runaway guard. Thinking models count hidden reasoning tokens against it, so keep it roomy."
+    },
+    {
+      "key": "SAGE_API_HEADERS",
+      "label": "Extra headers",
+      "kind": "text",
+      "placeholder": "Name: value; Other: value",
+      "help": "Optional. For OpenRouter's app headers, an Azure api-key, or a proxy token."
+    },
+    {
+      "key": "SAGE_MEMORY",
+      "label": "The notebook remembers",
+      "kind": "select",
+      "options": [
+        "",
+        "off"
+      ],
+      "help": "When on (default), the notebook keeps your pages on the tablet, he follows the conversation, and 「给我看看……」 / \"show me…\" conjures past pages. \"off\" disables all of it."
+    },
+    {
+      "key": "SAGE_SITTING_GAP",
+      "label": "Minutes that end a sitting",
+      "kind": "text",
+      "placeholder": "45",
+      "help": "After this long without writing, the next page begins a new sitting: the same afternoon for him, begun anew."
+    },
+    {
+      "key": "SAGE_TZ_OFFSET",
+      "label": "Timezone offset",
+      "kind": "text",
+      "placeholder": "8",
+      "help": "Hours from UTC (the tablet keeps UTC). Dates of conjured memories read right, and he only knows your time of day when this is set."
+    }
+  ],
+  "presets": [
+    {
+      "name": "OpenAI",
+      "values": {
+        "SAGE_API": "",
+        "SAGE_REASONING": "",
+        "SAGE_API_BASE": "https://api.openai.com/v1",
+        "SAGE_MODEL": "gpt-4o-mini"
+      }
+    },
+    {
+      "name": "Gemini",
+      "values": {
+        "SAGE_API": "",
+        "SAGE_REASONING": "low",
+        "SAGE_API_BASE": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "SAGE_MODEL": "gemini-3.5-flash"
+      }
+    },
+    {
+      "name": "Claude",
+      "values": {
+        "SAGE_API": "anthropic",
+        "SAGE_REASONING": "",
+        "SAGE_API_BASE": "https://api.anthropic.com/v1",
+        "SAGE_MODEL": "claude-haiku-5-5"
+      }
+    },
+    {
+      "name": "OpenRouter",
+      "values": {
+        "SAGE_API": "",
+        "SAGE_REASONING": "",
+        "SAGE_API_BASE": "https://openrouter.ai/api/v1",
+        "SAGE_MODEL": "openai/gpt-4o-mini"
+      }
+    },
+    {
+      "name": "Ollama (local)",
+      "values": {
+        "SAGE_API": "",
+        "SAGE_REASONING": "",
+        "SAGE_API_BASE": "http://192.168.1.20:11434/v1",
+        "SAGE_MODEL": "qwen2.5vl"
+      }
+    }
+  ]
+}

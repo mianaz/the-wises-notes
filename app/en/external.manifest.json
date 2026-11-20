@@ -1,0 +1,8 @@
+{
+  "id": "sage-notes-en",
+  "name": "The Wise's Notes",
+  "version": "0.1.0",
+  "description": "Hroptatyr's notebook with an English guide: write, and young Hroptatyr answers in ink. Same notebook and memory as 贤者笔记.",
+  "application": "appload-launch.sh",
+  "qtfb": false
+}
