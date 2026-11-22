@@ -1,5 +1,5 @@
 #!/bin/bash
-# 贤者笔记 in full-takeover mode: the riddle engine with Hroptatyr's persona,
+# 贤者笔记 in full-takeover mode: the notebook with Hroptatyr's persona,
 # a Chinese hand and Chinese UI. Stops xochitl, ALWAYS restores it on exit.
 #
 # Leave: power button sleeps, 5-finger tap exits. Escape hatch if anything

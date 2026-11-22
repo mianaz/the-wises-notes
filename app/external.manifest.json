@@ -2,7 +2,7 @@
   "id": "sage-notes",
   "name": "贤者笔记",
   "version": "0.1.0",
-  "description": "海洛塔帝的笔记：写下论题，「树下研讨会」中的贤者会以墨迹作答。 The Wise's Notes: write, and young Hroptatyr answers in ink.",
+  "description": "海洛塔帝的笔记：写下论题，「树下研讨会」上年轻的他会以墨迹作答。 The Wise's Notes: write, and young Hroptatyr answers in ink.",
   "application": "appload-launch.sh",
   "qtfb": false
 }

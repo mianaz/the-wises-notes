@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stage the AppLoad bundle and zip it as a release, like riddle's.
+# Stage the AppLoad bundle and zip it as a release.
 #   ./scripts/make-bundle.sh           # after ./scripts/build.sh
 #   ./scripts/make-bundle.sh --stage   # stage only (used by deploy.sh)
 #
@@ -21,6 +21,12 @@ done
 
 for f in dist/sage dist/libquill.so dist/libquillcompat.so; do
     [ -f "$f" ] || { echo "missing $f: run ./scripts/build.sh first" >&2; exit 1; }
+done
+for f in dist/sage dist/libquillcompat.so; do
+    if LC_ALL=C grep -aqF -e "$HOME" -e "$PWD" "$f"; then
+        echo "$f contains a local build path: rebuild with ./scripts/build.sh" >&2
+        exit 1
+    fi
 done
 [ -f fonts/LXGWWenKai-Regular.ttf ] || ./scripts/fetch-fonts.sh
 

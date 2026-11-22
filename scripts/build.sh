@@ -45,6 +45,13 @@ export SAGE_LINK_DIR="$LINK_DIR"
 export CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-$HOME/.cache/sage-target}
 CARGO=${CARGO:-$HOME/.cargo/bin/cargo}
 
+# Keep the builder's home and checkout paths out of released binaries. The
+# encoded form (0x1f between flags) survives spaces in those paths.
+SEP=$'\x1f'
+CARGO_HOME_DIR=${CARGO_HOME:-$HOME/.cargo}
+RUSTUP_HOME_DIR=${RUSTUP_HOME:-$HOME/.rustup}
+export CARGO_ENCODED_RUSTFLAGS="--remap-path-prefix=$PWD=/sage-notes$SEP--remap-path-prefix=$CARGO_HOME_DIR=/cargo$SEP--remap-path-prefix=$RUSTUP_HOME_DIR=/rustup"
+
 for arg in "$@"; do
     case "$arg" in
         --pull-libs)
@@ -68,5 +75,6 @@ mkdir -p dist && cp "$BIN" dist/sage
 cp "$LINK_DIR/libquill.so" dist/libquill.so
 
 # OS 3.29 swapBuffers shim (compat/quillcompat.c), preloaded by sage-takeover.sh.
-"$TOOLS/cc-arm" -shared -fPIC -O2 -o dist/libquillcompat.so compat/quillcompat.c -ldl
+"$TOOLS/cc-arm" -shared -fPIC -O2 -g0 -s -ffile-prefix-map="$PWD"=. \
+    -o dist/libquillcompat.so compat/quillcompat.c -ldl
 echo "built: dist/sage ($(du -h dist/sage | cut -f1)), dist/libquill.so, dist/libquillcompat.so"

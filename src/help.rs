@@ -373,7 +373,7 @@ mod tests {
         assert!(black > 5000, "panel looks empty: {black} dark px");
 
         // Dump for visual inspection.
-        let out = std::env::temp_dir().join("riddle-help-modal.png");
+        let out = std::env::temp_dir().join("sage-help-modal.png");
         let mut gray = vec![0u8; w * h];
         for y in 0..h {
             for x in 0..w {
@@ -414,7 +414,7 @@ mod tests {
         }
         assert!(black > 10_000, "sleep page looks empty: {black} dark px");
 
-        let out = std::env::temp_dir().join("riddle-sleep-page.png");
+        let out = std::env::temp_dir().join("sage-sleep-page.png");
         let mut gray = vec![0u8; w * h];
         for y in 0..h {
             for x in 0..w {

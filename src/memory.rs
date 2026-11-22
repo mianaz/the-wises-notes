@@ -496,7 +496,7 @@ mod tests {
 
     fn tmp_store(name: &str) -> MemoryStore {
         let dir =
-            std::env::temp_dir().join(format!("riddle-mem-test-{}-{name}", std::process::id()));
+            std::env::temp_dir().join(format!("sage-mem-test-{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         MemoryStore { dir, entries: Vec::new(), facts: Vec::new() }
